@@ -4,6 +4,7 @@ import numpy as np
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dateutil import parser
 
@@ -221,7 +222,6 @@ def read_root():
 @app.get("/chat")
 def chat_get():
     return {"message": "Use POST /chat to send messages."}
-
 @app.post("/chat", response_model=ChatResponse)
 async def chat(msg: ChatMessage, request: Request, authorization: str = Header(None)):
     require_auth(authorization)
@@ -312,3 +312,8 @@ async def session_dump(session_id: str, authorization: str = Header(None)):
 async def audit_dump(authorization: str = Header(None)):
     require_auth(authorization)
     return {"count": len(AUDIT_LOGS), "events": AUDIT_LOGS[-50:]}
+
+from fastapi.staticfiles import StaticFiles
+
+# Serve everything inside ./static at root
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
