@@ -318,6 +318,9 @@ async def chat(msg: ChatMessage, request: Request, authorization: str = Header(N
 def read_root():
     return {"status": "ok", "message": "Chatbot service is live on app2 🎉"}
 
+@app.get("/chat")
+def chat_get():
+    return {"message": "Use POST /chat to send messages."}
 
 @app.get("/session/{session_id}")
 async def session_dump(session_id: str, authorization: str = Header(None)):

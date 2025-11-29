@@ -218,6 +218,9 @@ def audit(event: Dict[str, Any]):
 def read_root():
     return {"status": "ok", "message": "Chatbot service is live on app1 🎉"}
 
+@app.get("/chat")
+def chat_get():
+    return {"message": "Use POST /chat to send messages."}
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(msg: ChatMessage, request: Request, authorization: str = Header(None)):
