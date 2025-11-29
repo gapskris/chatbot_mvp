@@ -216,7 +216,7 @@ def audit(event: Dict[str, Any]):
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "Chatbot service is live 🎉"}
+    return {"status": "ok", "message": "Chatbot service is live on app1 🎉"}
 
 
 @app.post("/chat", response_model=ChatResponse)

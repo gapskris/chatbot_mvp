@@ -316,7 +316,7 @@ async def chat(msg: ChatMessage, request: Request, authorization: str = Header(N
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "Chatbot service is live 🎉"}
+    return {"status": "ok", "message": "Chatbot service is live on app2 🎉"}
 
 
 @app.get("/session/{session_id}")
