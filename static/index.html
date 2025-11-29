@@ -20,9 +20,13 @@
       <button id="send">Send</button>
     </div>
     <script>
-      const API = "http://localhost:8000/chat";
+      //const API = "http://localhost:8000/chat";
+      const API = "https://chatbot-mvp-4j83.onrender.com/chat";   // relative path, since frontend + backend share domain
       const TOKEN = "changeme-token"; // match backend
       let sessionId = null;
+
+      
+      //const TOKEN = "YOUR_TOKEN";
 
       function addMsg(text, cls="bot") {
         const div = document.createElement("div");
