@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>TruBot Chatbot</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      #chat { border: 1px solid #ddd; padding: 1rem; max-width: 800px; }
+      .msg { margin: 0.5rem 0; white-space: pre-wrap; }
+      .user { color: #333; }
+      .bot { color: #0a6; }
+      .src { font-size: 0.9em; color: #666; }
+      .meta { font-size: 0.8em; color: #555; }
+    </style>
+  </head>
+  <body>
+    <h2>TruBot Chatbot</h2>
+    <div>
+      <label>Tenant:
+        <select id="tenant">
+          <option value="acme">Tenant1</option>
+          <option value="globex">Tenant2</option>
+        </select>
+      </label>
+    </div>
+    <div id="chat"></div>
+    <div style="margin-top:1rem;">
+      <input id="userId" placeholder="Optional USER-42" style="width:20%;" />
+      <input id="input" placeholder="Type a message..." style="width:50%;" />
+      <button id="send">Send</button>
+    </div>
+    <script>
+      const API = "http://localhost:8000/chat";
+      const TOKEN = "changeme-token";
+      let sessionId = null;
+
+      function addMsg(text, cls="bot") {
+        const div = document.createElement("div");
+        div.className = "msg " + cls;
+        div.textContent = text;
+        document.getElementById("chat").appendChild(div);
+      }
+
+      function addMeta(text) {
+        const div = document.createElement("div");
+        div.className = "msg meta";
+        div.textContent = text;
+        document.getElementById("chat").appendChild(div);
+      }
+
+      async function send() {
+        const text = document.getElementById("input").value.trim();
+        const tenant = document.getElementById("tenant").value;
+        const user_id = document.getElementById("userId").value.trim() || null;
+        if (!text) return;
+        addMsg(`[${tenant}] ${text}`, "user");
+        document.getElementById("input").value = "";
+        const payload = { session_id: sessionId, text, channel: "web", tenant, user_id };
+        const res = await fetch(API, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + TOKEN
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        sessionId = data.session_id;
+        addMsg(data.reply, "bot");
+        if (data.sources && data.sources.length) {
+          const src = document.createElement("div");
+          src.className = "src";
+          src.textContent = "Sources: " + data.sources.map(s => s.id).join(", ");
+          document.getElementById("chat").appendChild(src);
+        }
+        addMeta(`Action: ${data.action} | intent_conf: ${data.metrics?.intent_confidence} | policy_v: ${data.policy_version}`);
+      }
+
+      document.getElementById("send").onclick = send;
+      document.getElementById("input").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+    </script>
+  </body>
+</html>
