@@ -314,6 +314,11 @@ async def chat(msg: ChatMessage, request: Request, authorization: str = Header(N
         policy_version=PROMPT_REGISTRY["policy"]["v"]
     )
 
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Chatbot service is live 🎉"}
+
+
 @app.get("/session/{session_id}")
 async def session_dump(session_id: str, authorization: str = Header(None)):
     require_auth(authorization)
