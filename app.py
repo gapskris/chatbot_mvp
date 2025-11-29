@@ -12,6 +12,8 @@ from dateutil import parser
 # Config & simple dependencies
 # ------------------------------
 API_AUTH_TOKEN = "changeme-token"  # Replace in env in production
+TENANTS = {"Tenant1", "Tenant2"} #Auth token → Simple bearer token for API calls (replace with SSO in production).
+#Tenants → Multi-tenant support (different orgs like Acme, Globex).
 
 app = FastAPI(title="Chatbot MVP", version="0.1.0")
 app.add_middleware(
@@ -29,6 +31,7 @@ SESSIONS: Dict[str, Dict[str, Any]] = {}  # session_id -> state
 AUDIT_LOGS: List[Dict[str, Any]] = []     # append-only
 np.random.seed(0)
 
+# KNowledge Base (simple vector store) RAG
 class KBIndex:
     def __init__(self):
         self.docs: List[Dict[str, Any]] = []  # {id, text, emb}
@@ -48,6 +51,7 @@ class KBIndex:
         sims.sort(key=lambda x: x[1], reverse=True)
         return [{"id": s[0]["id"], "text": s[0]["text"], "score": s[1]} for s in sims[:top_k]]
 
+#KNowledge base population(RAG)
 KB = KBIndex()
 KB.add("faq_1", "You can enroll in a course by providing your user ID and the course ID.")
 KB.add("faq_2", "To check progress, ask for 'progress' with your user ID. We return completed, total, and percent.")
@@ -70,7 +74,7 @@ class ChatResponse(BaseModel):
     metrics: Optional[Dict[str, Any]] = None
 
 # ------------------------------
-# Utilities
+# Utilities - Auth and Tenant Resolution
 # ------------------------------
 def require_auth(authorization: str = Header(None)):
     if authorization is None or not authorization.startswith("Bearer "):
@@ -314,7 +318,6 @@ async def audit_dump(authorization: str = Header(None)):
     require_auth(authorization)
     return {"count": len(AUDIT_LOGS), "events": AUDIT_LOGS[-50:]}
 
+#Mount the static folder in FastAPI
 from fastapi.staticfiles import StaticFiles
-
-# Serve everything inside ./static at root
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
