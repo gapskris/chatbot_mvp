@@ -1,0 +1,42 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 2rem;
+  background: #f9f9f9;
+}
+
+h2 {
+  color: #0a6;
+}
+
+#chat {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 1rem;
+  max-width: 700px;
+  min-height: 300px;
+  overflow-y: auto;
+}
+
+.msg {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+}
+
+.user {
+  background: #e6f0ff;
+  color: #003366;
+  text-align: right;
+}
+
+.bot {
+  background: #e6ffe6;
+  color: #004d1a;
+  text-align: left;
+}
+
+.src {
+  font-size: 0.85em;
+  color: #666;
+  margin-left: 1rem;
+}
