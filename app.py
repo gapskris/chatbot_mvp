@@ -1,3 +1,8 @@
+# FastAPI → Main framework.
+# Request, Header, HTTPException → Used for request metadata and error handling.
+# StaticFiles → Lets you serve index.html, CSS, JS.
+# uuid, time → Used for session IDs and timestamps.
+
 import time
 import uuid
 import numpy as np
@@ -10,11 +15,14 @@ from dateutil import parser
 
 # ------------------------------
 # Config & simple dependencies
+# Auth token → Simple bearer token for API calls (replace with SSO in production).
+# Tenants → Multi-tenant support (different orgs like Acme, Globex).
 # ------------------------------
-API_AUTH_TOKEN = "changeme-token"  # Replace in env in production
-TENANTS = {"Tenant1", "Tenant2"} #Auth token → Simple bearer token for API calls (replace with SSO in production).
-#Tenants → Multi-tenant support (different orgs like Acme, Globex).
+API_AUTH_TOKEN = "changeme-token"  # Replace in env in production env
+TENANTS = {"Tenant1", "Tenant2"} 
 
+# Creates the FastAPI app.
+# Enables CORS so the frontend can talk to backend.
 app = FastAPI(title="Chatbot MVP", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
@@ -26,12 +34,21 @@ app.add_middleware(
 
 # ------------------------------
 # In-memory stores (session, audit, KB)
+# Sessions → Keeps track of ongoing conversations.
+# Audit logs → Immutable record of interactions.
+# Prompt registry → Versioned system/policy prompts (for governance).
 # ------------------------------
 SESSIONS: Dict[str, Dict[str, Any]] = {}  # session_id -> state
 AUDIT_LOGS: List[Dict[str, Any]] = []     # append-only
 np.random.seed(0)
 
-# KNowledge Base (simple vector store) RAG
+# KNowledge Base (simple in memory vector store) RAG
+# Stores documents with embeddings.
+# Lets you query by text and retrieve the most similar entries.
+# Acts as a lightweight RAG backend without external libraries like FAISS or Pinecone
+# Embeddings → Fake vectors generated with numpy (replace with real embeddings later).
+# Tenant isolation → Each tenant has its own KB docs.
+# Query → Returns top-k matching docs with similarity scores.
 class KBIndex:
     def __init__(self):
         self.docs: List[Dict[str, Any]] = []  # {id, text, emb}
@@ -59,6 +76,8 @@ KB.add("policy_1", "We do not process full PII. Please avoid sharing emails or p
 
 # ------------------------------
 # Schemas
+# Defines the input (user message) and output (bot reply) formats.
+
 # ------------------------------
 class ChatMessage(BaseModel):
     session_id: Optional[str] = None
@@ -75,6 +94,10 @@ class ChatResponse(BaseModel):
 
 # ------------------------------
 # Utilities - Auth and Tenant Resolution
+# Checks for a valid Authorization: Bearer ... header.
+# If missing or incorrect, returns 401 or 403.
+# Used in /chat and /audit to protect sensitive endpoints.
+
 # ------------------------------
 def require_auth(authorization: str = Header(None)):
     if authorization is None or not authorization.startswith("Bearer "):
@@ -83,6 +106,10 @@ def require_auth(authorization: str = Header(None)):
     if token != API_AUTH_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
 
+
+# PII redaction → Masks emails/phone numbers.
+# Session management → Creates/reuses session IDs.
+# Audit logging → Appends events to audit log.
 def redact_pii(text: str) -> str:
     # Very simple redaction: mask emails and 10+ digit numbers
     import re
@@ -95,6 +122,8 @@ def now_ms() -> int:
 
 # ------------------------------
 # NLP: intent & entities
+# Intent detection → Rule-based (keywords like “enroll”, “progress”).
+# Entity extraction → Finds dates, course IDs, user IDs.
 # ------------------------------
 INTENT_CUES = {
     "enroll course": ["enroll", "register", "sign up", "add course"],
@@ -134,6 +163,9 @@ def extract_entities(text: str) -> Dict[str, Any]:
 
 # ------------------------------
 # Tools (LMS simulators)
+# Simulated LMS tools: 
+# Enroll course → Confirms enrollment.
+# Fetch progress → Returns fake progress numbers.
 # ------------------------------
 def tool_enroll_course(user_id: str, course_id: str) -> Dict[str, Any]:
     # Simulate enrollment
@@ -148,6 +180,12 @@ def tool_fetch_progress(user_id: str) -> Dict[str, Any]:
 
 # ------------------------------
 # Dialog policy
+# Decides what to do next: 
+# Clarify
+# Collect missing info
+# Call tool
+# RAG (knowledge base)
+# Handoff to human
 # ------------------------------
 def next_action(state: Dict[str, Any]) -> Dict[str, Any]:
     intent = state["intent"]
@@ -169,6 +207,9 @@ def next_action(state: Dict[str, Any]) -> Dict[str, Any]:
 
 # ------------------------------
 # Response generator (LLM adapter stub)
+# Generates final reply text.
+# Adds sources if RAG was used.
+# Formats tool results (enrollment/progress).
 # ------------------------------
 def compose_reply(state: Dict[str, Any], result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     action = state["action"]
@@ -204,6 +245,10 @@ def compose_reply(state: Dict[str, Any], result: Optional[Dict[str, Any]]) -> Di
 
 # ------------------------------
 # Session helpers & audit
+# Stores conversations in memory (dictionary).
+# If a session ID is provided and exists → reuse it.
+# Otherwise → create a new UUID and start a new session.
+
 # ------------------------------
 def get_or_create_session(session_id: Optional[str]) -> str:
     if session_id and session_id in SESSIONS:
@@ -227,6 +272,7 @@ def read_root():
 def chat_get():
     return {"message": "Use POST /chat to send messages."}
 
+# Accepts POST requests with JSON body like:
 @app.post("/chat", response_model=ChatResponse)
 async def chat(msg: ChatMessage, request: Request, authorization: str = Header(None)):
     require_auth(authorization)
@@ -318,7 +364,9 @@ async def audit_dump(authorization: str = Header(None)):
     require_auth(authorization)
     return {"count": len(AUDIT_LOGS), "events": AUDIT_LOGS[-50:]}
 
-#Mount the static folder in FastAPI
-from fastapi.staticfiles import StaticFiles
+@app.get("/health")
+async def health():
+    return {"status": "ok", "message": "Chatbot service is live 🎉"}
 
+#Mount the static folder in FastAPI
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
