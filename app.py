@@ -266,11 +266,11 @@ def audit(event: Dict[str, Any]):
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "Chatbot service is live on app1 🎉"}
+    return {"status": "ok", "message": "Chatbot service is live on TrueBot Platform 🎉"}
 
 @app.get("/chat")
 def chat_get():
-    return {"message": "Use POST /chat to send messages."}
+    return {"message": "Use POST /chat to send messages. Welcome to TruBot Platforms"}
 
 # Accepts POST requests with JSON body like:
 @app.post("/chat", response_model=ChatResponse)
@@ -369,4 +369,5 @@ async def health():
     return {"status": "ok", "message": "Chatbot service is live 🎉"}
 
 #Mount the static folder in FastAPI
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
